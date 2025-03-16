@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+
 public class ChatServer {
     private static final int PORT = 12345;  // You can change the port
     private final CopyOnWriteArrayList<ClientHandler> clients = new CopyOnWriteArrayList<>();
