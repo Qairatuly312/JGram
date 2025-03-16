@@ -6,7 +6,6 @@
 //import jv.chat.util.UIManager;
 //
 //public class App extends Application {
-//
 //    @Override
 //    public void start(Stage primaryStage) throws Exception {
 //        UIManager.setPrimaryStage(primaryStage);
