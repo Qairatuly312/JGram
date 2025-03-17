@@ -1,7 +1,13 @@
 package jv.chat.network;
 
+import jv.chat.database.DatabaseConnection;
+
 import java.io.*;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class ClientHandler implements Runnable {
     private final Socket socket;
@@ -21,18 +27,28 @@ public class ClientHandler implements Runnable {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
 
-            // Ask for username
+            // Запрашиваем имя пользователя
             out.println("Enter your username:");
             username = in.readLine();
+
+            if (username == null || username.trim().isEmpty()) {
+                disconnect();
+                return;
+            }
+
             System.out.println("👤 User logged in: " + username);
             server.broadcastMessage("📢 " + username + " joined the chat!", this);
 
-            // Read messages from client
+            // Загружаем историю сообщений при входе
+            sendChatHistory();
+
+            // Читаем входящие сообщения
             String message;
             while ((message = in.readLine()) != null) {
                 if (message.equalsIgnoreCase("/exit")) {
                     break;
                 }
+
                 System.out.println(username + ": " + message);
                 server.broadcastMessage(username + ": " + message, this);
             }
@@ -47,6 +63,10 @@ public class ClientHandler implements Runnable {
         out.println(message);
     }
 
+    public String getUsername() {
+        return username;
+    }
+
     private void disconnect() {
         try {
             System.out.println("❌ " + username + " disconnected.");
@@ -54,6 +74,20 @@ public class ClientHandler implements Runnable {
             server.removeClient(this);
             socket.close();
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendChatHistory() {
+        String query = "SELECT sender, content FROM messages ORDER BY timestamp ASC LIMIT 50";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                sendMessage(rs.getString("sender") + ": " + rs.getString("content"));
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }

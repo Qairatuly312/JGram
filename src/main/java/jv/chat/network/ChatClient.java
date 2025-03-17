@@ -5,8 +5,8 @@ import java.net.Socket;
 import java.util.Scanner;
 
 public class ChatClient {
-    private final String SERVER_ADDRESS = "127.0.0.1";  // Change if needed
-    private final int SERVER_PORT = 12345;
+    private static final String SERVER_ADDRESS = "localhost";
+    private static final int SERVER_PORT = 12345;
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
@@ -20,7 +20,7 @@ public class ChatClient {
             out = new PrintWriter(socket.getOutputStream(), true);
             Scanner scanner = new Scanner(System.in);
 
-            // Handle incoming messages from the server
+            // Читаем сообщения от сервера
             Thread listenerThread = new Thread(() -> {
                 try {
                     String serverMessage;
@@ -34,12 +34,15 @@ public class ChatClient {
             listenerThread.setDaemon(true);
             listenerThread.start();
 
-            // Send messages to the server
+            // Ввод пользователя
             while (true) {
                 String message = scanner.nextLine();
                 out.println(message);
+
                 if (message.equalsIgnoreCase("/exit")) {
                     break;
+                } else if (message.equalsIgnoreCase("/history")) {
+                    System.out.println("📜 Loading chat history...");
                 }
             }
 
@@ -51,8 +54,7 @@ public class ChatClient {
 
     private void disconnect() {
         try {
-            if (socket != null) socket.close();
-            System.out.println("🔌 Disconnected from server.");
+            socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

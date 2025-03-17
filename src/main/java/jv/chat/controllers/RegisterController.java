@@ -1,41 +1,39 @@
 package jv.chat.controllers;
 
 import jv.chat.database.UserDAO;
-import jv.chat.models.User;
-import jv.chat.utils.UIManager;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
+import jv.chat.utils.UIManager;
 
-public class LoginController {
+public class RegisterController {
     @FXML private TextField usernameField;
     @FXML private TextField passwordField;
 
     private final UserDAO userDAO = new UserDAO();
 
     @FXML
-    private void handleLogin() {
+    private void handleRegister() {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
-        User user = userDAO.getUserByUsername(username);
-        if (user != null && user.getPassword().equals(password)) {
-            System.out.println("Вход выполнен успешно!");
-            UIManager.switchScene("chat.fxml");
+        if (userDAO.registerUser(username, password)) {
+            showAlert("Успех", "Регистрация прошла успешно!");
         } else {
-            showAlert("Ошибка входа", "Неверное имя пользователя или пароль.");
+            showAlert("Ошибка", "Пользователь уже существует.");
         }
     }
 
     private void showAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
     }
     @FXML
-    private void goToRegister() {
-        UIManager.switchScene("register.fxml");
+    private void goToLogin() {
+        UIManager.switchScene("login.fxml");
     }
+
 }

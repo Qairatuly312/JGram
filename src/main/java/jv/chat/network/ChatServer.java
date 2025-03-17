@@ -1,13 +1,13 @@
 package jv.chat.network;
 
+import jv.chat.database.DatabaseConnection;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-
 public class ChatServer {
-    private static final int PORT = 12345;  // You can change the port
+    private static final int PORT = 12345;
     private final CopyOnWriteArrayList<ClientHandler> clients = new CopyOnWriteArrayList<>();
 
     public void start() {
@@ -18,7 +18,6 @@ public class ChatServer {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("✅ New client connected: " + clientSocket);
 
-                // Create a new ClientHandler for this user
                 ClientHandler clientHandler = new ClientHandler(clientSocket, this);
                 clients.add(clientHandler);
                 new Thread(clientHandler).start();
@@ -33,6 +32,12 @@ public class ChatServer {
     }
 
     public void broadcastMessage(String message, ClientHandler sender) {
+        // Сохраняем сообщение в базе данных
+        if (sender != null) {
+            DatabaseConnection.sendMessage(sender.getUsername(), message);
+        }
+
+        // Отправляем всем клиентам
         for (ClientHandler client : clients) {
             if (client != sender) {
                 client.sendMessage(message);
