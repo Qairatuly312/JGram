@@ -1,51 +1,60 @@
 package jv.chat.network;
 
-import jv.chat.database.DatabaseConnection;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.concurrent.CopyOnWriteArrayList;
+import jv.chat.database.UserDAO;
+import java.io.*;
+import java.net.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
 
 public class ChatServer {
-    private static final int PORT = 12345;
-    private final CopyOnWriteArrayList<ClientHandler> clients = new CopyOnWriteArrayList<>();
+    public static final int PORT = 12346;
+    private Map<Integer, ClientHandler> clients = new ConcurrentHashMap<>();
 
-    public void start() {
-        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("🔥 Chat server started on port " + PORT);
+
+    public ChatServer(int port) {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server is running on port " + port);
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("✅ New client connected: " + clientSocket);
+                System.out.println("Client connected: " + clientSocket.getInetAddress());
 
-                ClientHandler clientHandler = new ClientHandler(clientSocket, this);
-                clients.add(clientHandler);
-                new Thread(clientHandler).start();
+                new Thread(new ClientHandler(clientSocket, this)).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void removeClient(ClientHandler client) {
-        clients.remove(client);
+
+//    public synchronized void broadcast(String message, PrintWriter excludeWriter) {
+//        for (PrintWriter writer : clients) {
+//            if (writer != excludeWriter) { // Avoid sending to the sender
+//                writer.println(message);
+//            }
+//        }
+//    }
+
+    public synchronized void addUser(int userID, ClientHandler clientHandler) {
+        clients.put(userID, clientHandler);
     }
 
-    public void broadcastMessage(String message, ClientHandler sender) {
-        // Сохраняем сообщение в базе данных
-        if (sender != null) {
-            DatabaseConnection.sendMessage(sender.getUsername(), message);
-        }
+    public synchronized void removeUser(int userID) {
+        clients.remove(userID);
+    }
 
-        // Отправляем всем клиентам
-        for (ClientHandler client : clients) {
-            if (client != sender) {
-                client.sendMessage(message);
-            }
-        }
+    public synchronized ClientHandler getClient(int userId) {
+        return clients.get(userId);
     }
 
     public static void main(String[] args) {
-        new ChatServer().start();
+        new ChatServer(PORT);
+    }
+
+    public static void stop() {
+        System.exit(0);
     }
 }

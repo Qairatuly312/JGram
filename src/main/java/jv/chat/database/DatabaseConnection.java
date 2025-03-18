@@ -6,9 +6,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class DatabaseConnection {
-    private static final String URL = "jdbc:postgresql://localhost:5432/JGram_db";
+    private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "SONIT2CX";
+    private static final String PASSWORD = "c17h21no5";
 
     static {
         try {
@@ -18,8 +18,8 @@ public class DatabaseConnection {
         }
     }
 
-    public static void sendMessage(String username, String message){
-        String query = "INSERT INTO messages (username, message) VALUES (?, ?)";
+    public static void sendMessageDB(String username, String message){
+        String query = "INSERT INTO jgram.messages (username, message) VALUES (?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)){
             stmt.setString(1, username);

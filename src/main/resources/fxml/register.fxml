@@ -4,7 +4,12 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox spacing="10" alignment="CENTER" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="jv.chat.controllers.RegisterController">
+<VBox spacing="10"
+      alignment="CENTER"
+      xmlns="http://javafx.com/javafx/8"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="jv.chat.controllers.RegisterController">
+
     <Label text="Register" style="-fx-font-size: 24px;"/>
 
     <TextField fx:id="usernameField" promptText="Username" maxWidth="250"/>

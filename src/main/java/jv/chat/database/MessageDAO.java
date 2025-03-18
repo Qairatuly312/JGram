@@ -7,8 +7,9 @@ import java.util.List;
 
 public class MessageDAO {
 
-    public boolean saveMessage(int senderId, int receiverId, String content) {
-        String query = "INSERT INTO messages (sender_id, receiver_id, content, timestamp) VALUES (?, ?, ?, NOW())";
+
+    public static boolean saveMessage(int senderId, int receiverId, String content) {
+        String query = "INSERT INTO jgram.messages (sender_id, receiver_id, content, timestamp) VALUES (?, ?, ?, NOW())";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, senderId);
@@ -23,7 +24,7 @@ public class MessageDAO {
 
     public List<Message> getChatHistory(int user1, int user2) {
         List<Message> messages = new ArrayList<>();
-        String query = "SELECT * FROM messages WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?) ORDER BY timestamp ASC";
+        String query = "SELECT * FROM jgram.messages WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?) ORDER BY timestamp ASC";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, user1);

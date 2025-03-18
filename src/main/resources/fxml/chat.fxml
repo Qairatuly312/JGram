@@ -17,7 +17,7 @@
     <Label fx:id="chatHeader" text="someone i'm writing to"
            style="-fx-font-size: 18px; -fx-font-weight: bold;" />
 
-    <ScrollPane fx:id="scrollPane" fitToWidth="true" prefHeight="600">
+    <ScrollPane fx:id="scrollPane" fitToWidth="true" prefHeight="1200">
         <VBox fx:id="chatHistory" spacing="5">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>

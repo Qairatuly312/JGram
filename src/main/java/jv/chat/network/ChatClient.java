@@ -1,66 +1,64 @@
 package jv.chat.network;
 
 import java.io.*;
-import java.net.Socket;
-import java.util.Scanner;
+import java.net.*;
 
 public class ChatClient {
-    private static final String SERVER_ADDRESS = "localhost";
-    private static final int SERVER_PORT = 12345;
     private Socket socket;
-    private BufferedReader in;
-    private PrintWriter out;
+    private static PrintWriter writer;
+    private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-    public void start() {
+
+    public ChatClient(String serverAddress, int port) {
+        System.out.println("i'm chat client constructor");
         try {
-            socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
-            System.out.println("✅ Connected to chat server.");
+            socket = new Socket(serverAddress, port);
+            writer = new PrintWriter(socket.getOutputStream(), true);
+            reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
-            Scanner scanner = new Scanner(System.in);
+            new Thread(this::receiveMessages).start();
 
-            // Читаем сообщения от сервера
-            Thread listenerThread = new Thread(() -> {
-                try {
-                    String serverMessage;
-                    while ((serverMessage = in.readLine()) != null) {
-                        System.out.println(serverMessage);
-                    }
-                } catch (IOException e) {
-                    System.out.println("❌ Disconnected from server.");
-                }
-            });
-            listenerThread.setDaemon(true);
-            listenerThread.start();
+//            sendMessages();
 
-            // Ввод пользователя
-            while (true) {
-                String message = scanner.nextLine();
-                out.println(message);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-                if (message.equalsIgnoreCase("/exit")) {
-                    break;
-                } else if (message.equalsIgnoreCase("/history")) {
-                    System.out.println("📜 Loading chat history...");
-                }
+//    private void sendMessages() {
+//        try {
+//            String message;
+//            while ((message = reader.readLine()) != null) {
+//                writer.println(message);
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+
+    private void receiveMessages() {
+        try {
+            String message;
+            while ((message = reader.readLine()) != null) {
+                System.out.println("Server: " + message);
+                System.out.flush();
             }
-
-            disconnect();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Disconnected from server.");
+            System.out.flush();
         }
     }
 
-    private void disconnect() {
+    public static void sendMessage(String message) {
         try {
-            socket.close();
-        } catch (IOException e) {
+            writer.println(message); // Send the actual message
+            writer.flush(); // Ensure it's sent immediately
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public static void main(String[] args) {
-        new ChatClient().start();
+    public static String receiveMessage() throws IOException {
+        return reader.readLine();
     }
 }

@@ -1,94 +1,87 @@
 package jv.chat.network;
 
-import jv.chat.database.DatabaseConnection;
+import jv.chat.database.MessageDAO;
+import jv.chat.database.UserDAO;
+import jv.chat.models.User;
 
 import java.io.*;
-import java.net.Socket;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.net.*;
 import java.sql.SQLException;
 
+import static jv.chat.database.UserDAO.extractReceiverId;
+import static jv.chat.network.ChatServer.PORT;
+
 public class ClientHandler implements Runnable {
-    private final Socket socket;
-    private final ChatServer server;
-    private BufferedReader in;
-    private PrintWriter out;
-    private String username;
+    private Socket socket;
+    private ChatServer server;
+    private BufferedReader reader;
+    private PrintWriter writer;
+    private int userId;
 
     public ClientHandler(Socket socket, ChatServer server) {
         this.socket = socket;
         this.server = server;
+        try {
+            System.out.println("ClientHandler started " + socket.getInetAddress());
+
+            reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            writer = new PrintWriter(socket.getOutputStream(), true);
+
+            System.out.println("Clienthandler started client reader/writer: " + reader + " / " + writer);
+
+            userId = UserDAO.getUserIdByUsername(reader.readLine());
+            System.out.println(userId + ": " + reader.readLine());
+
+            server.addUser(userId, this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendMessage(String message) {
+        writer.println(message);
     }
 
     @Override
     public void run() {
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
-
-            // Запрашиваем имя пользователя
-            out.println("Enter your username:");
-            username = in.readLine();
-
-            if (username == null || username.trim().isEmpty()) {
-                disconnect();
-                return;
-            }
-
-            System.out.println("👤 User logged in: " + username);
-            server.broadcastMessage("📢 " + username + " joined the chat!", this);
-
-            // Загружаем историю сообщений при входе
-            sendChatHistory();
-
-            // Читаем входящие сообщения
             String message;
-            while ((message = in.readLine()) != null) {
-                if (message.equalsIgnoreCase("/exit")) {
-                    break;
+            while ((message = reader.readLine()) != null) {
+                System.out.println("Received: " + message);
+
+                int receiverId = extractReceiverId(message);
+                System.out.println("receiverId : " + receiverId);
+
+                if (receiverId != -1) {
+                    // Save message to the database
+                    MessageDAO.saveMessage(userId, receiverId, message);
+
+                    // Find receiver
+                    ClientHandler receiverHandler = server.getClient(receiverId);
+
+                    if (receiverHandler != null) {
+                        receiverHandler.sendMessage("Private message from " + userId + ": " + message);
+                    } else {
+                        sendMessage("User " + receiverId + " is offline.");
+                    }
+                } else {
+                    // Broadcast to all clients
+//                    server.broadcast("Client " + userId + ": " + message, writer);
                 }
 
-                System.out.println(username + ": " + message);
-                server.broadcastMessage(username + ": " + message, this);
+                writer.println("Server received: " + message);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Client " + e.getMessage() + " caught " + e + "\nClient disconnected");
         } finally {
-            disconnect();
-        }
-    }
-
-    public void sendMessage(String message) {
-        out.println(message);
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    private void disconnect() {
-        try {
-            System.out.println("❌ " + username + " disconnected.");
-            server.broadcastMessage("📢 " + username + " left the chat!", this);
-            server.removeClient(this);
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void sendChatHistory() {
-        String query = "SELECT sender, content FROM messages ORDER BY timestamp ASC LIMIT 50";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                sendMessage(rs.getString("sender") + ": " + rs.getString("content"));
+            server.removeUser(userId); // Remove client when they disconnect
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
+
 }
