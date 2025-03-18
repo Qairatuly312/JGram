@@ -7,6 +7,7 @@
 <BorderPane xmlns="http://javafx.com/javafx/8.0.171"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="jv.chat.controllers.ChatController"
+            fx:id="borderPane"
             prefWidth="1710" prefHeight="1068"
             minWidth="1710" minHeight="1068"
             style="-fx-background-color: #ecf0f1;">
@@ -15,16 +16,16 @@
     <left>
         <VBox spacing="10" style="-fx-background-color: #2C3E50; -fx-padding: 10;">
             <Label fx:id="accountName" style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
-            <ListView fx:id="contactsList" prefHeight="500" />
+            <ListView fx:id="contactsList" prefHeight="500"/>
             <Button fx:id="profileButton" text="Profile" style="-fx-font-size: 14px;"/>
         </VBox>
     </left>
 
     <!-- Chat Area -->
     <center>
-        <VBox spacing="10">
-            <Label fx:id="chatHeader"
-                   style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+        <VBox spacing="10" style="-fx-padding: 10;">
+            <Label fx:id="chatHeader" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
             <ScrollPane fx:id="scrollPane" fitToWidth="true" prefHeight="750">
                 <VBox fx:id="chatHistory" spacing="5">
                     <padding>
@@ -32,14 +33,13 @@
                     </padding>
                 </VBox>
             </ScrollPane>
+
+            <!-- Message Input Box inside VBox -->
+            <HBox spacing="5" style="-fx-padding: 5;">
+                <TextField fx:id="messageInput" promptText="Type a message..." HBox.hgrow="ALWAYS"/>
+                <Button fx:id="sendButton" text="Send"/>
+            </HBox>
         </VBox>
     </center>
 
-    <!-- Message Input -->
-    <bottom>
-        <HBox spacing="5" style="-fx-padding: 5;">
-            <TextField fx:id="messageInput" promptText="Type a message..." HBox.hgrow="ALWAYS"/>
-            <Button fx:id="sendButton" text="Send"/>
-        </HBox>
-    </bottom>
 </BorderPane>

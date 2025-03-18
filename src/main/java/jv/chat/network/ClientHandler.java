@@ -47,16 +47,6 @@ public class ClientHandler implements Runnable {
             String username = (String) in.readObject();
             System.out.println("User connected: " + username);
 
-//            Object obj = in.readObject();
-//            System.out.println("Received object type: " + obj.getClass().getName());  // Debugging
-//
-//            if (obj instanceof Message) {
-//                Message message = (Message) obj;
-//                System.out.println("Received Message: " + message.getContent());
-//            } else {
-//                System.out.println("Unexpected data received: " + obj);
-//            }
-
             Message message;
             while ((message = (Message) in.readObject()) != null) {
                 System.out.println("Received: " + message);
@@ -64,33 +54,26 @@ public class ClientHandler implements Runnable {
                 int receiverId = extractReceiverId(message);
                 System.out.println("receiverId: " + receiverId);
 
-                if (receiverId != -1) {
-                    // Save message to the database
-                    MessageDAO.saveMessage(userId, receiverId, message.getContent());
-
-                    // Find receiver
-                    ClientHandler receiverHandler = server.getClient(receiverId);
-
-                    if (receiverHandler != null) {
-                        receiverHandler.sendMessage(message);  // ✅ Send to the receiver
-                    } else {
-                        System.out.println("User " + receiverId + " is offline.");
-                        // You could queue the message or notify the sender
-                        sendMessage(new Message(userId, receiverId, "User is offline. Message will be saved."));
-                    }
-                } else {
-                    server.broadcast(message, out);  // ✅ Broadcast to all
+                if (receiverId == -1) {
+                    System.out.println("Invalid recipient. Message not sent.");
+                    return;
                 }
 
-                // ✅ Send proper acknowledgment as a Message object (not a String)
-                sendMessage(new Message(0, userId, "Server received your message."));
+                MessageDAO.saveMessage(userId, receiverId, message.getContent());
+
+                ClientHandler receiverHandler = server.getClient(receiverId);
+
+                if (receiverHandler != null) {
+                    receiverHandler.sendMessage(message);
+                } else {
+
+                }
             }
         } catch (EOFException e) {
             System.out.println("Client disconnected.");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         } finally {
-            // ✅ Remove the user and close resources properly
             server.removeUser(userId);
             try {
                 socket.close();
