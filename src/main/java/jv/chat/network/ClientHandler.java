@@ -1,15 +1,9 @@
 package jv.chat.network;
 
 import jv.chat.database.MessageDAO;
-import jv.chat.database.UserDAO;
-import jv.chat.models.User;
 
 import java.io.*;
 import java.net.*;
-import java.sql.SQLException;
-
-import static jv.chat.database.UserDAO.extractReceiverId;
-import static jv.chat.network.ChatServer.PORT;
 
 public class ClientHandler implements Runnable {
     private Socket socket;
@@ -17,10 +11,13 @@ public class ClientHandler implements Runnable {
     private BufferedReader reader;
     private PrintWriter writer;
     private int userId;
+    private int receiverId = 1; // Фиксированный ID получателя (можно заменить)
 
-    public ClientHandler(Socket socket, ChatServer server) {
+    public ClientHandler(Socket socket, ChatServer server) { // Передаем userId сразу
         this.socket = socket;
         this.server = server;
+        this.userId = userId;
+
         try {
             System.out.println("ClientHandler started " + socket.getInetAddress());
 
@@ -29,8 +26,7 @@ public class ClientHandler implements Runnable {
 
             System.out.println("Clienthandler started client reader/writer: " + reader + " / " + writer);
 
-            userId = UserDAO.getUserIdByUsername(reader.readLine());
-            System.out.println(userId + ": " + reader.readLine());
+            System.out.println("User logged in with ID: " + userId);
 
             server.addUser(userId, this);
         } catch (IOException e) {
@@ -49,33 +45,22 @@ public class ClientHandler implements Runnable {
             while ((message = reader.readLine()) != null) {
                 System.out.println("Received: " + message);
 
-                int receiverId = extractReceiverId(message);
-                System.out.println("receiverId : " + receiverId);
+                // Сохраняем сообщение в БД
+                MessageDAO.saveMessage(userId, receiverId, message);
 
-                if (receiverId != -1) {
-                    // Save message to the database
-                    MessageDAO.saveMessage(userId, receiverId, message);
-
-                    // Find receiver
-                    ClientHandler receiverHandler = server.getClient(receiverId);
-
-                    if (receiverHandler != null) {
-                        receiverHandler.sendMessage("Private message from " + userId + ": " + message);
-                    } else {
-                        sendMessage("User " + receiverId + " is offline.");
-                    }
+                // Отправляем его получателю
+                ClientHandler receiverHandler = server.getClient(receiverId);
+                if (receiverHandler != null) {
+                    receiverHandler.sendMessage("From " + userId + ": " + message);
                 } else {
-                    // Broadcast to all clients
-//                    server.broadcast("Client " + userId + ": " + message, writer);
+                    sendMessage("User " + receiverId + " is offline.");
                 }
-
-                writer.println("Server received: " + message);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Client " + e.getMessage() + " caught " + e + "\nClient disconnected");
+            System.out.println("Client disconnected");
         } finally {
-            server.removeUser(userId); // Remove client when they disconnect
+            server.removeUser(userId);
             try {
                 socket.close();
             } catch (IOException e) {
@@ -83,5 +68,4 @@ public class ClientHandler implements Runnable {
             }
         }
     }
-
 }

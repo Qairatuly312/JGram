@@ -6,7 +6,7 @@ import java.sql.*;
 public class UserDAO {
 
     public boolean registerUser(String username, String password) {
-        String query = "INSERT INTO jgram.users (username, password) VALUES (?, ?)";
+        String query = "INSERT INTO users (username, password) VALUES (?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, username);
@@ -19,7 +19,8 @@ public class UserDAO {
     }
 
     public User getUserByUsername(String username) {
-        String query = "SELECT * FROM jgram.users WHERE username = ?";
+        String query = "SELECT * FROM users WHERE username = ?";
+        System.out.println("Querying database for user: " + username);
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, username);
@@ -33,16 +34,37 @@ public class UserDAO {
         return null;
     }
 
-    public static int extractReceiverId(String message) {
+    public static Integer extractReceiverId(String message) {
         if (message.startsWith("@")) {
-            String receiverUsername = message.split(" ")[0].substring(1); // Remove '@'
-            return UserDAO.getUserIdByUsername(receiverUsername);
+            String[] parts = message.split(" ", 2);
+            if (parts.length < 2) {
+                System.out.println("Ошибка: Некорректный формат сообщения: " + message);
+                return null; // Сообщение невалидное
+            }
+            String receiverUsername = parts[0].substring(1).trim();
+            Integer receiverId = getUserIdByUsername(receiverUsername);
+
+            if (receiverId == null || receiverId <= 0) {
+                System.out.println("Ошибка: Пользователь не найден: " + receiverUsername);
+                return null; // Вернем null, если пользователя нет
+            }
+
+            System.out.println("Extracted receiver ID: " + receiverId + " for username: " + receiverUsername);
+            return receiverId;
         }
-        return -1; // No receiver specified
+        return null; // NULL для группового сообщения
     }
 
 
+
+
+
+
     public static int getUserIdByUsername(String username) {
+        if (username.startsWith("@")) {
+            username = username.substring(1); // Убираем @
+        }
+
         String query = "SELECT id FROM users WHERE username = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
