@@ -21,6 +21,9 @@ public class LoginController {
         User user = userDAO.getUserByUsername(username);
         if (user != null && user.getPassword().equals(password)) {
             System.out.println("Вход выполнен успешно!");
+
+            UIManager.setCurrentUsername(username);
+
             UIManager.switchScene("chat.fxml");
         } else {
             showAlert("Ошибка входа", "Неверное имя пользователя или пароль.");
@@ -34,6 +37,11 @@ public class LoginController {
         alert.setContentText(content);
         alert.showAndWait();
     }
+
+    public TextField getUsernameField() {
+        return usernameField;
+    }
+
     @FXML
     private void goToRegister() {
         UIManager.switchScene("register.fxml");

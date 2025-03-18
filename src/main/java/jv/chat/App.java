@@ -9,6 +9,7 @@ import jv.chat.utils.UIManager;
 public class App extends Application {
     @Override
     public void start(Stage primaryStage) {
+        primaryStage.setResizable(false);
         System.out.println("i started");
         UIManager.setPrimaryStage(primaryStage);
         UIManager.switchScene("login.fxml");

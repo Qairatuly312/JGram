@@ -1,22 +1,26 @@
 package jv.chat.network;
 
+import jv.chat.models.Message;
+
 import java.io.*;
 import java.net.*;
 
 public class ChatClient {
     private Socket socket;
-    private static PrintWriter writer;
-    private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    private static ObjectOutputStream out;
+    private static ObjectInputStream in;
 
 
-    public ChatClient(String serverAddress, int port) {
+    public ChatClient(String serverAddress, int port, String username) {
         System.out.println("i'm chat client constructor");
         try {
             socket = new Socket(serverAddress, port);
-            writer = new PrintWriter(socket.getOutputStream(), true);
-            reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
 
-            new Thread(this::receiveMessages).start();
+            out.writeObject(username);
+
+//            new Thread(this::receiveMessages).start();
 
 //            sendMessages();
 
@@ -38,27 +42,37 @@ public class ChatClient {
 
     private void receiveMessages() {
         try {
-            String message;
-            while ((message = reader.readLine()) != null) {
-                System.out.println("Server: " + message);
-                System.out.flush();
+            Message message;
+            while ((message = (Message) in.readObject()) != null) {
+                System.out.println("Server: " + message.getContent());
             }
-        } catch (IOException e) {
-            System.out.println("Disconnected from server.");
-            System.out.flush();
-        }
-    }
-
-    public static void sendMessage(String message) {
-        try {
-            writer.println(message); // Send the actual message
-            writer.flush(); // Ensure it's sent immediately
+        } catch (SocketException e) {
+            System.out.println("Connection closed by server.");
+        } catch (EOFException e) {
+            System.out.println("Server shut down.");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public static String receiveMessage() throws IOException {
-        return reader.readLine();
+    public static void sendMessage(Message message) {
+        try {
+            synchronized (out) {
+                out.writeObject(message);
+                out.flush();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Message receiveMessage() throws IOException {
+        try {
+            return (Message) in.readObject();
+        } catch (Exception e) {
+//            e.printStackTrace();
+        }
+        return null;
     }
 }

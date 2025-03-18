@@ -1,6 +1,8 @@
 package jv.chat.network;
 
 import jv.chat.database.UserDAO;
+import jv.chat.models.Message;
+
 import java.io.*;
 import java.net.*;
 import java.util.HashMap;
@@ -30,20 +32,24 @@ public class ChatServer {
     }
 
 
-//    public synchronized void broadcast(String message, PrintWriter excludeWriter) {
-//        for (PrintWriter writer : clients) {
-//            if (writer != excludeWriter) { // Avoid sending to the sender
-//                writer.println(message);
-//            }
-//        }
-//    }
+    public synchronized void broadcast(Message message, ObjectOutputStream excludeStream) throws IOException {
+        for (ClientHandler handler : clients.values()) {
+            if (handler.getOut() != excludeStream) { // Avoid sending to the sender
+                handler.sendMessage(message);
+            }
+        }
+    }
+
 
     public synchronized void addUser(int userID, ClientHandler clientHandler) {
         clients.put(userID, clientHandler);
     }
 
     public synchronized void removeUser(int userID) {
-        clients.remove(userID);
+        ClientHandler handler = clients.remove(userID);
+        if (handler != null) {
+            handler.closeConnection();
+        }
     }
 
     public synchronized ClientHandler getClient(int userId) {

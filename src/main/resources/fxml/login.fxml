@@ -7,6 +7,10 @@
 <VBox spacing="10" alignment="CENTER"
       xmlns="http://javafx.com/javafx/8"
       xmlns:fx="http://javafx.com/fxml/1"
+      prefWidth="1710"
+      prefHeight="1068"
+      minWidth="1710"
+      minHeight="1068"
       fx:controller="jv.chat.controllers.LoginController">
     <Label text="Login" style="-fx-font-size: 24px;"/>
 
