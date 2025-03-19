@@ -1,7 +1,5 @@
 package jv.chat.network;
 
-import jv.chat.database.MessageDAO;
-import jv.chat.database.UserDAO;
 import jv.chat.models.Message;
 
 import java.io.*;
@@ -23,13 +21,15 @@ public class ClientHandler implements Runnable {
             System.out.println("ClientHandler started " + socket.getInetAddress());
 
             out = new ObjectOutputStream(socket.getOutputStream());
+            out.flush();
+            this.out.flush();
             in = new ObjectInputStream(socket.getInputStream());
 
-            System.out.println("Clienthandler started client out/writer: " + in + " / " + out);
+            System.out.println("Client handler started client out/writer: " + in + " / " + out);
 
             userId = 1;
 
-            server.addUser(userId, this);
+            server.addClient(userId, this);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -37,7 +37,19 @@ public class ClientHandler implements Runnable {
 
     public void sendMessage(Message message) throws IOException {
         out.writeObject(message);
+        out.flush();
+        out.reset();
     }
+
+    public void notifyChatUpdate() {
+        try {
+            out.writeObject("UPDATE_CHAT"); // Tell the client to reload messages
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 
     @Override
@@ -59,22 +71,14 @@ public class ClientHandler implements Runnable {
                     return;
                 }
 
-                MessageDAO.saveMessage(userId, receiverId, message.getContent());
-
-                ClientHandler receiverHandler = server.getClient(receiverId);
-
-                if (receiverHandler != null) {
-                    receiverHandler.sendMessage(message);
-                } else {
-
-                }
+                    server.sendMessageToDB(receiverId, message);
             }
         } catch (EOFException e) {
             System.out.println("Client disconnected.");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         } finally {
-            server.removeUser(userId);
+            server.removeClient(userId);
             try {
                 socket.close();
             } catch (IOException e) {

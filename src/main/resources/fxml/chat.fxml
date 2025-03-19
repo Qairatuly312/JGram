@@ -17,7 +17,6 @@
         <VBox spacing="10" style="-fx-background-color: #2C3E50; -fx-padding: 10;">
             <Label fx:id="accountName" style="-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;"/>
             <ListView fx:id="contactsList" prefHeight="500"/>
-            <Button fx:id="profileButton" text="Profile" style="-fx-font-size: 14px;"/>
         </VBox>
     </left>
 

@@ -41,6 +41,7 @@ public class MessageDAO {
                         rs.getTimestamp("timestamp").toLocalDateTime()
                 ));
             }
+            System.out.println("messages loaded " + messages.size() + " messages");
         } catch (SQLException e) {
             e.printStackTrace();
         }

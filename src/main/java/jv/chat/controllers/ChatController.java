@@ -10,13 +10,18 @@ import javafx.scene.layout.*;
 import jv.chat.database.MessageDAO;
 import jv.chat.database.UserDAO;
 import jv.chat.models.Message;
+import jv.chat.models.User;
 import jv.chat.network.ChatClient;
+import jv.chat.network.ClientHandler;
 import jv.chat.utils.UIManager;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.List;
 
 import static jv.chat.database.UserDAO.getAllUsernames;
+import static jv.chat.database.UserDAO.getUserIdByUsername;
 import static jv.chat.network.ChatServer.PORT;
 
 public class ChatController {
@@ -25,9 +30,6 @@ public class ChatController {
 
     @FXML
     private BorderPane borderPane;
-
-    @FXML
-    private Button profileButton;
 
     @FXML
     private Label chatHeader;
@@ -53,14 +55,16 @@ public class ChatController {
     private static final String SERVER_ADDRESS = "127.0.0.1";
     private static ChatClient client;
     private static String username;
+    private static ObjectOutputStream objectOutputStream;
+    private static ObjectInputStream objectInputStream;
+
+
+
 
     @FXML
     public void initialize() {
-
         username = UIManager.getCurrentUsername();
         accountName.setText(username);
-
-        new Thread(() -> client = new ChatClient(SERVER_ADDRESS, PORT, username)).start();
 
         sendButton.setOnAction(event -> sendMessageUI());
         messageInput.setOnKeyPressed(event -> {
@@ -70,27 +74,60 @@ public class ChatController {
             }
         });
 
+        try{
+            client = new ChatClient(SERVER_ADDRESS, PORT, username);
+            startReceivingMessages();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        loadContacts();
+
         contactsList.getSelectionModel().selectedItemProperty().addListener((obs, oldContact, newContact) -> {
             if (newContact != null) {
+                System.out.println("Selected contact: " + newContact);
                 loadChatHistory(newContact);
             }
         });
 
+//        // **Ensure contacts are loaded before selecting a contact**
+    Platform.runLater(() -> {
+        if (!contactsList.getItems().isEmpty()) {
+            contactsList.getSelectionModel().selectFirst(); // Select first contact
+            String selectedContact = contactsList.getSelectionModel().getSelectedItem();
+            System.out.println("Auto-loading chat history for: " + selectedContact);
+            loadChatHistory(selectedContact);
+        } else {
+            System.out.println("No contacts found.");
+        }
+    });
+        chatHeader.setText("smth");
+    }
 
+    private void startReceivingMessages() {
         new Thread(() -> {
             while (true) {
                 try {
                     Message received = ChatClient.receiveMessage();
-                    Platform.runLater(() -> displayReceivedMessage(received));
+                    Platform.runLater(() ->{
+                        if(received == null) return;
+                        System.out.println("received message from : " + received.getSenderId() + " message " + received.getContent());
+                        displayReceivedMessage(received);
+
+                        String selectedContact = contactsList.getSelectionModel().getSelectedItem();
+                        int selectedContactId = getUserIdByUsername(selectedContact);
+                        if (received != null && received.getSenderId() == selectedContactId) {
+                            loadChatHistory(selectedContact);
+                        }
+                    });
                 } catch (IOException e) {
                     e.printStackTrace();
                     break;
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             }
         }).start();
-
-        loadContacts();
-        chatHeader.setText("Chat Header");
     }
 
     private void loadContacts() {
@@ -112,10 +149,9 @@ public class ChatController {
         if (message.getContent().trim().isEmpty()) return;
 
 
-        MessageDAO.saveMessage(senderId, receiverId, messageInput.getText().trim());
 
         Platform.runLater(() -> {
-            displaySentMessage(message.getContent());
+            displaySentMessage(message);
             messageInput.clear();
         });
 
@@ -128,8 +164,9 @@ public class ChatController {
         }).start();
     }
 
-private void displaySentMessage(String message) {
-    HBox messageBox = createMessageBubble(message, "#3498db", Pos.CENTER_RIGHT);
+private void displaySentMessage(Message message) {
+    HBox messageBox = createMessageBubble(message.getContent(), "#3498db", Pos.CENTER_RIGHT);
+    System.out.println("displaying sent message");
     chatHistory.getChildren().add(messageBox);
     chatHistory.layout();
 }
@@ -137,13 +174,15 @@ private void displaySentMessage(String message) {
 private void displayReceivedMessage(Message message) {
     if (message == null || message.getContent().isEmpty())
         return;
-    if(message.getSenderId() == UserDAO.getUserIdByUsername(username)) {
+    if(message.getReceiverId() == UserDAO.getUserIdByUsername(username)) {
         HBox messageBox = createMessageBubble(message.getContent(), "#2ecc71", Pos.CENTER_LEFT);
+        System.out.println("displaying received message");
         chatHistory.getChildren().add(messageBox);
+        chatHistory.layout();
     }
 }
 
-private HBox createMessageBubble(String text, String color, Pos alignment) {
+    private HBox createMessageBubble(String text, String color, Pos alignment) {
     HBox messageBox = new HBox();
     messageBox.setPadding(new Insets(5));
     messageBox.setAlignment(alignment);
@@ -157,20 +196,32 @@ private HBox createMessageBubble(String text, String color, Pos alignment) {
     return messageBox;
 }
 
-private void loadChatHistory(String selectedContact) {
-    chatHistory.getChildren().clear(); // Clear previous chat
-    int senderId = UserDAO.getUserIdByUsername(username);
-    int receiverId = UserDAO.getUserIdByUsername(selectedContact);
 
-    List<Message> messages = MessageDAO.getChatHistory(senderId, receiverId);
+    public void loadChatHistory(String contact) {
+        int senderId = getUserIdByUsername(username); // Assuming you store the logged-in user's ID
+        int receiverId = getUserIdByUsername(contact); // Get the selected contact's ID
+        System.out.println("senderId: " + senderId + " receiverId: " + receiverId);
 
-    for (Message msg : messages) {
-        if (msg.getSenderId() == senderId) {
-            displaySentMessage(msg.getContent());
-        } else {
-            displayReceivedMessage(msg);
-        }
+        List<Message> messages = MessageDAO.getChatHistory(senderId, receiverId);
+        System.out.println("loading chat history");
+
+        Platform.runLater(() -> {
+            chatHistory.getChildren().clear(); // Clear previous messages
+
+            for (Message message : messages) {
+                if(message.getSenderId() == senderId) {
+                    displaySentMessage(message);
+                    System.out.println("sent message from loop");
+                }else{
+                    displayReceivedMessage(message);
+                    System.out.println("received message from loop");
+                }
+
+            }
+            Platform.runLater(() -> { chatHistory.requestLayout();
+                scrollPane.requestLayout();scrollPane.setVvalue(1.0);});
+        });
     }
-}
+
 
 }

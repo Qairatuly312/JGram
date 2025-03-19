@@ -1,14 +1,11 @@
 package jv.chat.network;
 
-import jv.chat.database.UserDAO;
+import jv.chat.database.MessageDAO;
 import jv.chat.models.Message;
 
 import java.io.*;
 import java.net.*;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.*;
 
 public class ChatServer {
@@ -31,21 +28,20 @@ public class ChatServer {
         }
     }
 
-
-    public synchronized void broadcast(Message message, ObjectOutputStream excludeStream) throws IOException {
-        for (ClientHandler handler : clients.values()) {
-            if (handler.getOut() != excludeStream) { // Avoid sending to the sender
-                handler.sendMessage(message);
-            }
-        }
+    public synchronized void sendMessageToDB(int receiverId, Message message) {
+        // Save message to the database (always)
+        MessageDAO.saveMessage(message.getSenderId(), receiverId, message.getContent());
     }
 
 
-    public synchronized void addUser(int userID, ClientHandler clientHandler) {
+    public synchronized void addClient(int userID, ClientHandler clientHandler) {
+        if(clients.containsKey(userID)) {
+            System.out.println("Client is already connected");
+        }
         clients.put(userID, clientHandler);
     }
 
-    public synchronized void removeUser(int userID) {
+    public synchronized void removeClient(int userID) {
         ClientHandler handler = clients.remove(userID);
         if (handler != null) {
             handler.closeConnection();

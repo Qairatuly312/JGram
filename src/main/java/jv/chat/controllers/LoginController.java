@@ -28,6 +28,7 @@ public class LoginController {
         } else {
             showAlert("Ошибка входа", "Неверное имя пользователя или пароль.");
         }
+
     }
 
     private void showAlert(String title, String content) {

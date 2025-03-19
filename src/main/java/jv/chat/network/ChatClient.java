@@ -16,7 +16,9 @@ public class ChatClient {
         try {
             socket = new Socket(serverAddress, port);
             out = new ObjectOutputStream(socket.getOutputStream());
+            System.out.println("BEFORE IN CHATCLIENT");
             in = new ObjectInputStream(socket.getInputStream());
+            System.out.println("After IN CHATCLIENT");
 
             out.writeObject(username);
 
@@ -67,12 +69,20 @@ public class ChatClient {
         }
     }
 
-    public static Message receiveMessage() throws IOException {
+    public static Message receiveMessage() throws IOException, InterruptedException {
         try {
             return (Message) in.readObject();
-        } catch (Exception e) {
-//            e.printStackTrace();
+        } catch (EOFException e) {
+            System.out.println("Connection closed.");
+            return null; // Stop processing
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            Thread.sleep(100); // Reduce spam (wait 100ms before retrying)
         }
         return null;
+    }
+
+    public Socket getSocket() {
+        return socket;
     }
 }
