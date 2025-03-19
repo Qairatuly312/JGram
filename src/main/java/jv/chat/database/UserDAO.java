@@ -30,7 +30,7 @@ public class UserDAO {
             stmt.setString(1, username);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                return new User(rs.getInt("id"), rs.getString("username"), rs.getString("password")/*,rs.getBoolean("isOnline")*/);
+                return new User(rs.getInt("id"), rs.getString("username"), rs.getString("password"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -39,7 +39,7 @@ public class UserDAO {
     }
 
     public static List<String> getAllUsernames(int id) {
-        String query = "SELECT username FROM jgram.users WHERE id!=?"; // Select only necessary columns
+        String query = "SELECT username FROM jgram.users WHERE id!=?";
         List<String> users = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -50,11 +50,11 @@ public class UserDAO {
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 String username = rs.getString("username");
-                users.add(username); // Assuming User has a constructor (id, username)
+                users.add(username);
             }
 
         } catch (SQLException e) {
-            e.printStackTrace(); // Handle exception properly in production
+            e.printStackTrace();
         }
 
         return users;
@@ -83,6 +83,6 @@ public class UserDAO {
             e.printStackTrace();
         }
 
-        return -1; // User not found
+        return -1;
     }
 }

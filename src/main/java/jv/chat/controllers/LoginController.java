@@ -20,7 +20,6 @@ public class LoginController {
 
         User user = userDAO.getUserByUsername(username);
         if (user != null && user.getPassword().equals(password)) {
-            System.out.println("Вход выполнен успешно!");
 
             UIManager.setCurrentUsername(username);
 

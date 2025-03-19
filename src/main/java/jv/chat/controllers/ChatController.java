@@ -10,9 +10,7 @@ import javafx.scene.layout.*;
 import jv.chat.database.MessageDAO;
 import jv.chat.database.UserDAO;
 import jv.chat.models.Message;
-import jv.chat.models.User;
 import jv.chat.network.ChatClient;
-import jv.chat.network.ClientHandler;
 import jv.chat.utils.UIManager;
 
 import java.io.IOException;
@@ -27,30 +25,19 @@ import static jv.chat.network.ChatServer.PORT;
 public class ChatController {
     @FXML
     private ListView<String> contactsList;
-
-    @FXML
-    private BorderPane borderPane;
-
     @FXML
     private Label chatHeader;
-
     @FXML
     private VBox chatHistory;
-
     @FXML
     private ScrollPane scrollPane;
-
     @FXML
     private TextField messageInput;
-
     @FXML
     private Button sendButton;
-
     @FXML
     private Label accountName = new Label();
 
-    @FXML
-    private HBox messageBox;
 
     private static final String SERVER_ADDRESS = "127.0.0.1";
     private static ChatClient client;
@@ -74,7 +61,7 @@ public class ChatController {
             }
         });
 
-        try{
+        try {
             client = new ChatClient(SERVER_ADDRESS, PORT, username);
             startReceivingMessages();
         } catch (Exception e) {
@@ -87,21 +74,9 @@ public class ChatController {
             if (newContact != null) {
                 System.out.println("Selected contact: " + newContact);
                 loadChatHistory(newContact);
+                chatHeader.setText(newContact);
             }
         });
-
-//        // **Ensure contacts are loaded before selecting a contact**
-    Platform.runLater(() -> {
-        if (!contactsList.getItems().isEmpty()) {
-            contactsList.getSelectionModel().selectFirst(); // Select first contact
-            String selectedContact = contactsList.getSelectionModel().getSelectedItem();
-            System.out.println("Auto-loading chat history for: " + selectedContact);
-            loadChatHistory(selectedContact);
-        } else {
-            System.out.println("No contacts found.");
-        }
-    });
-        chatHeader.setText("smth");
     }
 
     private void startReceivingMessages() {
@@ -198,23 +173,19 @@ private void displayReceivedMessage(Message message) {
 
 
     public void loadChatHistory(String contact) {
-        int senderId = getUserIdByUsername(username); // Assuming you store the logged-in user's ID
-        int receiverId = getUserIdByUsername(contact); // Get the selected contact's ID
-        System.out.println("senderId: " + senderId + " receiverId: " + receiverId);
+        int senderId = getUserIdByUsername(username);
+        int receiverId = getUserIdByUsername(contact);
 
         List<Message> messages = MessageDAO.getChatHistory(senderId, receiverId);
-        System.out.println("loading chat history");
 
         Platform.runLater(() -> {
-            chatHistory.getChildren().clear(); // Clear previous messages
+            chatHistory.getChildren().clear();
 
             for (Message message : messages) {
                 if(message.getSenderId() == senderId) {
                     displaySentMessage(message);
-                    System.out.println("sent message from loop");
                 }else{
                     displayReceivedMessage(message);
-                    System.out.println("received message from loop");
                 }
 
             }

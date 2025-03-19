@@ -12,47 +12,13 @@ public class ChatClient {
 
 
     public ChatClient(String serverAddress, int port, String username) {
-        System.out.println("i'm chat client constructor");
         try {
             socket = new Socket(serverAddress, port);
             out = new ObjectOutputStream(socket.getOutputStream());
-            System.out.println("BEFORE IN CHATCLIENT");
             in = new ObjectInputStream(socket.getInputStream());
-            System.out.println("After IN CHATCLIENT");
 
             out.writeObject(username);
-
-//            new Thread(this::receiveMessages).start();
-
-//            sendMessages();
-
         } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-//    private void sendMessages() {
-//        try {
-//            String message;
-//            while ((message = reader.readLine()) != null) {
-//                writer.println(message);
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
-    private void receiveMessages() {
-        try {
-            Message message;
-            while ((message = (Message) in.readObject()) != null) {
-                System.out.println("Server: " + message.getContent());
-            }
-        } catch (SocketException e) {
-            System.out.println("Connection closed by server.");
-        } catch (EOFException e) {
-            System.out.println("Server shut down.");
-        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -74,10 +40,10 @@ public class ChatClient {
             return (Message) in.readObject();
         } catch (EOFException e) {
             System.out.println("Connection closed.");
-            return null; // Stop processing
+            return null;
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
-            Thread.sleep(100); // Reduce spam (wait 100ms before retrying)
+            Thread.sleep(100);
         }
         return null;
     }

@@ -1,5 +1,6 @@
 package jv.chat.network;
 
+import jv.chat.controllers.LoginController;
 import jv.chat.database.MessageDAO;
 import jv.chat.models.Message;
 
@@ -29,7 +30,6 @@ public class ChatServer {
     }
 
     public synchronized void sendMessageToDB(int receiverId, Message message) {
-        // Save message to the database (always)
         MessageDAO.saveMessage(message.getSenderId(), receiverId, message.getContent());
     }
 

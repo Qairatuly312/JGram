@@ -3,7 +3,6 @@ package jv.chat;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
-import jv.chat.network.ChatServer;
 import jv.chat.utils.UIManager;
 
 public class App extends Application {
